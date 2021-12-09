@@ -1,13 +1,18 @@
+from typing import List
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
-from .models import User, Category
+from datetime import datetime
+
+from .models import User, Category, Listing
 
 
 def index(request):
+    Listing.objects.all().order_by("-id")[0:8]
     return render(request, "auctions/index.html")
 
 
@@ -62,13 +67,38 @@ def register(request):
     else:
         return render(request, "auctions/register.html")
 
-
+@login_required(login_url = "/login")
 def create(request):
     if request.method == "POST":
+        title = request.POST["title"]
+        description = request.POST["description"]
+        cat = request.POST["category"]
+        try:
+            cat = Category.objects.get(category = cat)
+        except:
+            return render(request, "auctions/create.html", {
+            "categories": Category.objects.all(),
+            "message": "Something is not yes: Prosze wybrać kategorię",
+            "description": description,
+            "title": title,
+            "cat": cat,
+            })
+        try:
+            price = float(request.POST["price"])
+        except:
+            return render(request, "auctions/create.html", {
+            "categories": Category.objects.all(),
+            "message": "Something is not yes: Cos nie tak z ceną",
+            })
+
+        newList = Listing(title=title, description=description, starting_price = price, pub_date = datetime.today(), user = request.user)
+        newList.save()
+        newList.categories.add(cat)
+        return HttpResponse("Done")
         pass
 
     else:
         return render(request, "auctions/create.html", {
             "categories": Category.objects.all(),
-            "message": "tesotowanie czy wiadmosc dziala"
+            "message": "Strona podstawowa"
         })
