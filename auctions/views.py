@@ -5,15 +5,32 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.core.paginator import Paginator
 
 from datetime import datetime
 
 from .models import User, Category, Listing
 
 
-def index(request):
-    Listing.objects.all().order_by("-id")[0:8]
-    return render(request, "auctions/index.html")
+def index(request, page = 1):
+
+    p = page - 1
+    lpp = 5
+    auctions = Listing.objects.all().order_by("-id")[0+p*lpp:lpp+p*lpp]
+
+    auctions = Listing.objects.all().order_by("-id")
+    p = Paginator(auctions, lpp)
+    page_obj = p.get_page(page)
+    pages = p.get_elided_page_range(page_obj.number)
+
+
+
+    return render(request, "auctions/index.html", {
+        "test": page,
+        "auctions": auctions,
+        'page_obj': page_obj,
+        "pages": pages,
+    })
 
 
 def login_view(request):
@@ -102,3 +119,11 @@ def create(request):
             "categories": Category.objects.all(),
             "message": "Strona podstawowa"
         })
+
+
+def snippet():
+    for i in range(10):
+        obj = Listing.objects.get(pk=6)
+        obj.pk = None
+        obj.title = f"Różdżka {i+1}"
+        obj.save()
