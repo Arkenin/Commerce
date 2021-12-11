@@ -20,13 +20,14 @@ class Listing(models.Model):
 
 class Bid(models.Model):
     auction = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="bids")
-    bid_date = models.DateField()
+    bid_date = models.DateTimeField()
     bid_value = models.FloatField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     auction = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="comments")
-    com_date = models.DateField()
+    com_date = models.DateTimeField()
     text = models.CharField(max_length=128)
 
     def __str__(self) -> str:

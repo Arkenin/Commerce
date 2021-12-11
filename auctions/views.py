@@ -9,7 +9,7 @@ from django.core.paginator import Paginator
 
 from datetime import datetime
 
-from .models import User, Category, Listing
+from .models import Comment, User, Category, Listing
 
 
 def index(request, page = 1):
@@ -83,6 +83,40 @@ def register(request):
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "auctions/register.html")
+
+def auction(request, nr):
+    auc = Listing.objects.get(pk=nr)
+    if request.method == 'POST':
+        if 'search-bt' in request.POST:
+            print(">>>>przycisk search")   
+        if 'comment-bt' in request.POST:
+            print(">>>>przycisk comment")
+            comment = request.POST["comment"]
+            com_date = datetime.today()
+            newComment = Comment(
+                auction = Listing.objects.get(pk=nr),
+                com_date = datetime.today(),
+                text = comment,
+                user = request.user)
+            newComment.save()
+
+            
+            newComment.save
+            return render(request, "auctions/auction.html", {
+                "auc": auc,
+                "message": "Komentarz dodano",
+                "comments": Comment.objects.filter(auction = auc)
+            })
+             
+        pass
+
+    a = Listing.objects.get(pk=nr)
+
+    return render(request, "auctions/auction.html", {
+        "auc": Listing.objects.get(pk=nr),
+        "message": "Strona aukcji",
+        "comments": Comment.objects.filter(auction = auc)
+    })
 
 @login_required(login_url = "/login")
 def create(request):
