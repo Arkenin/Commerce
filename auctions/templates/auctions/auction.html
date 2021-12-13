@@ -2,6 +2,8 @@
 {% load static %}
 
 {% block body %}
+
+
   <h2>{{ auc.title }} (ID: {{auc.pk}})</h2>
 
 
@@ -16,6 +18,25 @@
 </h5><br>
 <p> {{ auc.description }}</p>
 <br><br>
+
+
+<div class="row">
+  <div class="col-sm-9">
+    <p>Current Price: {{ price|floatformat:2  }} zł</p>
+    
+  </div>
+  <div class="col-sm-3"> 
+    <form action="{% url 'auction' auc.pk %}" method="post">
+      {% csrf_token %}
+      <div class="input-group mb-3">
+        <input type="number" min="" step="0.01" name="bid_value" class="form-control" placeholder="Enter price" aria-label="Entering price label" aria-describedby="Button description">
+        <button class="btn btn-outline-secondary" type="submit" name="bid-bt">Place bid</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
 
 
 <h4>Leave a Comment:</h4>
@@ -92,7 +113,7 @@ Comments: <span class="badge bg-secondary">4</span>
     </ul>
     {{ page }}
 
-
+<!-- Pagination code for future use
     <nav aria-label="Page navigation example">
         <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
@@ -118,6 +139,6 @@ Comments: <span class="badge bg-secondary">4</span>
         </li>
         </ul>
       </nav>
-      
+       -->
 
 {% endblock %}

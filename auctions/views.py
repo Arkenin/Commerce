@@ -1,4 +1,5 @@
 from typing import List
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
@@ -6,22 +7,28 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.core.paginator import Paginator
+from django.template.defaulttags import register
 
 from datetime import datetime
 
-from .models import Comment, User, Category, Listing
+from .models import Bid, Comment, User, Category, Listing
 
 
 def index(request, page = 1):
 
     p = page - 1
     lpp = 5
-    auctions = Listing.objects.all().order_by("-id")[0+p*lpp:lpp+p*lpp]
 
     auctions = Listing.objects.all().order_by("-id")
+
+
     p = Paginator(auctions, lpp)
     page_obj = p.get_page(page)
     pages = p.get_elided_page_range(page_obj.number)
+
+    max_prices = {}
+    for auc in page_obj:
+        max_prices[auc.pk] = get_auction_max_price(auc)
 
 
 
@@ -30,6 +37,7 @@ def index(request, page = 1):
         "auctions": auctions,
         'page_obj': page_obj,
         "pages": pages,
+        "max_prices": max_prices,
     })
 
 
@@ -68,7 +76,6 @@ def register(request):
         confirmation = request.POST["confirmation"]
         if password != confirmation:
             return render(request, "auctions/register.html", {
-                "message": "Passwords must match."
             })
 
         # Attempt to create new user
@@ -76,8 +83,8 @@ def register(request):
             user = User.objects.create_user(username, email, password)
             user.save()
         except IntegrityError:
+            messages.error(request, "Username already taken.")
             return render(request, "auctions/register.html", {
-                "message": "Username already taken."
             })
         login(request, user)
         return HttpResponseRedirect(reverse("index"))
@@ -86,40 +93,60 @@ def register(request):
 
 def auction(request, nr):
     auc = Listing.objects.get(pk=nr)
+    act_max_bid = get_auction_max_price(auc)
+
+
+    
+
+    message = None
     if request.method == 'POST':
         if 'search-bt' in request.POST:
-            print(">>>>przycisk search")   
+            print(">>>>przycisk search")
+        if 'bid-bt' in request.POST:
+            print(">>>>przycisk bid")  
+            bid_value = float(request.POST["bid_value"])
+            
+
+            if act_max_bid == None or bid_value > act_max_bid:
+                bid = Bid(
+                    user = request.user,
+                    bid_date = datetime.today(),
+                    bid_value = bid_value,
+                    auction = auc
+                )
+                bid.save()
+                act_max_bid = bid_value
+                messages.success(request, "Bid placed.")
+            else:
+                messages.warning(request, "Your bid must be higher than actual price.")
+
+                
+
         if 'comment-bt' in request.POST:
             print(">>>>przycisk comment")
             comment = request.POST["comment"]
-            com_date = datetime.today()
             newComment = Comment(
                 auction = Listing.objects.get(pk=nr),
                 com_date = datetime.today(),
                 text = comment,
                 user = request.user)
             newComment.save()
+            message = "Comment added."
+            messages.success(request, "Comment added.")
 
-            
-            newComment.save
-            return render(request, "auctions/auction.html", {
-                "auc": auc,
-                "message": "Komentarz dodano",
-                "comments": Comment.objects.filter(auction = auc)
-            })
-             
-        pass
 
     a = Listing.objects.get(pk=nr)
 
     return render(request, "auctions/auction.html", {
         "auc": Listing.objects.get(pk=nr),
-        "message": "Strona aukcji",
-        "comments": Comment.objects.filter(auction = auc)
+        "message": message,
+        "comments": Comment.objects.filter(auction = auc),
+        "price": act_max_bid,
     })
 
 @login_required(login_url = "/login")
 def create(request):
+    error = False
     if request.method == "POST":
         title = request.POST["title"]
         description = request.POST["description"]
@@ -127,26 +154,26 @@ def create(request):
         try:
             cat = Category.objects.get(category = cat)
         except:
-            return render(request, "auctions/create.html", {
-            "categories": Category.objects.all(),
-            "message": "Something is not yes: Prosze wybrać kategorię",
-            "description": description,
-            "title": title,
-            "cat": cat,
-            })
+            messages.error(request, "Please choose at least one category.")
+            error = True
         try:
             price = float(request.POST["price"])
         except:
+            messages.error(request, "Invalid price.")
+            error = True
+
+        if error:
             return render(request, "auctions/create.html", {
-            "categories": Category.objects.all(),
-            "message": "Something is not yes: Cos nie tak z ceną",
-            })
+                "categories": Category.objects.all(),
+                "description": description,
+                "title": title,
+                "cat": cat,
+                })
 
         newList = Listing(title=title, description=description, starting_price = price, pub_date = datetime.today(), user = request.user)
         newList.save()
         newList.categories.add(cat)
-        return HttpResponse("Done")
-        pass
+        return HttpResponseRedirect(reverse("index"))
 
     else:
         return render(request, "auctions/create.html", {
@@ -155,9 +182,20 @@ def create(request):
         })
 
 
+def get_auction_max_price(auc):
+    act_max_bid = Bid.objects.filter(auction = auc).order_by('-bid_value').first()
+    if act_max_bid == None:
+        act_max_bid = auc.starting_price
+    else:
+        act_max_bid = act_max_bid.bid_value
+    return act_max_bid
+
 def snippet():
     for i in range(10):
         obj = Listing.objects.get(pk=6)
         obj.pk = None
         obj.title = f"Różdżka {i+1}"
         obj.save()
+
+
+

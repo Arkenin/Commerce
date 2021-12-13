@@ -9,11 +9,13 @@
     <ul class="list-group">
 
         {% for auc in page_obj %}
+        {% with alpha=1 beta=2 pk=auc.pk %}
+
         <a href="{% url 'auction' auc.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
           <div class="flex-column">
             <strong>{{ auc.title }}</strong> 
             <p><small>Seller: {{ auc.user }}</small></p>
-            <h1 class="card-title">{{ auc.starting_price }}<small class="text-muted fw-light"> zł</small></h1>
+            <h1 class="card-title">{{ auc.actual_price|floatformat:2|default:"nothing" }}<small class="text-muted fw-light"> zł</small></h1>
                 <span class="badge bg-primary"> 1 item in Stock</span>
         </div>
         <div class="image-parent">
@@ -21,6 +23,8 @@
             <div class="flaot-mb-right text-muted flaot-right">{{ auc.pub_date }}</div>
           </div>
         </a>
+        Test:{{pk}}, {{ max_prices.auc.pk }}, actual: {{ auc.actual_price }}
+        {% endwith %}
         {% endfor %}
     </ul>
     {{ page }}
