@@ -22,18 +22,32 @@
 
 <div class="row">
   <div class="col-sm-9">
+    {% if user.is_authenticated %}
+      {% if auc in user.watching.all %}
+      <a href="{% url 'watchlist_remove' auc.pk %}" class="btn btn-warning" style="position: relative; z-index: 2;">Remove from watchlist</a>
+      {% else %}
+      <a href="{% url 'watchlist_add' auc.pk %}" class="btn btn-primary" style="position: relative; z-index: 2;">Add to watch</a>
+      {% endif %} 
+    {% endif %}
     <p>Current Price: {{ price|floatformat:2  }} zł</p>
+
     
+
   </div>
+  {% if user.is_authenticated %}
   <div class="col-sm-3"> 
     <form action="{% url 'auction' auc.pk %}" method="post">
       {% csrf_token %}
       <div class="input-group mb-3">
         <input type="number" min="" step="0.01" name="bid_value" class="form-control" placeholder="Enter price" aria-label="Entering price label" aria-describedby="Button description">
         <button class="btn btn-outline-secondary" type="submit" name="bid-bt">Place bid</button>
+        {% if max_bid.user == user %}
+          You have the biggest one.
+        {% endif %}
       </div>
     </form>
   </div>
+  {% endif %}
 </div>
 
 
@@ -48,9 +62,9 @@
   <button type="submit" name="comment-bt" class="btn btn-success">Submit</button>
 </form>
 <br><br>
-Comments: <span class="badge bg-secondary">4</span>
+Comments: <span class="badge bg-secondary">{{ auc.comments.count }}</span>
 
-<br>
+<br><br>
 
 <div class="row">
 {% for com in comments %}

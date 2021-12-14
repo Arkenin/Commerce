@@ -6,7 +6,7 @@ from django.db.models.fields.related import ManyToManyField
 
 
 class User(AbstractUser):
-    watching = ManyToManyField(Listing, blank=True, related_name="users")
+    watching = ManyToManyField('Listing', blank=True, related_name="users")
     pass
 
 class Listing(models.Model):

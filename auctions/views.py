@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.core.paginator import Paginator
 from django.template.defaulttags import register
@@ -14,30 +14,25 @@ from datetime import datetime
 from .models import Bid, Comment, User, Category, Listing
 
 
-def index(request, page = 1):
+def index(request, page = 1, name = ''):
 
-    p = page - 1
     lpp = 5
 
-    auctions = Listing.objects.all().order_by("-id")
+    if name == 'watchlist':
+        auctions = Listing.objects.filter(users=request.user).order_by("-id")
+    else:
+        auctions = Listing.objects.all().order_by("-id")
 
 
     p = Paginator(auctions, lpp)
     page_obj = p.get_page(page)
     pages = p.get_elided_page_range(page_obj.number)
 
-    max_prices = {}
-    for auc in page_obj:
-        max_prices[auc.pk] = get_auction_max_price(auc)
-
-
-
     return render(request, "auctions/index.html", {
         "test": page,
         "auctions": auctions,
         'page_obj': page_obj,
         "pages": pages,
-        "max_prices": max_prices,
     })
 
 
@@ -95,10 +90,13 @@ def auction(request, nr):
     auc = Listing.objects.get(pk=nr)
     act_max_bid = get_auction_max_price(auc)
 
+    max_bid = Bid.objects.filter(auction = auc).order_by('-bid_value').first()
+    if max_bid == None:
+        act_max_bid = auc.starting_price
+    else:
+        act_max_bid = max_bid.bid_value
 
-    
 
-    message = None
     if request.method == 'POST':
         if 'search-bt' in request.POST:
             print(">>>>przycisk search")
@@ -107,7 +105,7 @@ def auction(request, nr):
             bid_value = float(request.POST["bid_value"])
             
 
-            if act_max_bid == None or bid_value > act_max_bid:
+            if bid_value > act_max_bid:
                 bid = Bid(
                     user = request.user,
                     bid_date = datetime.today(),
@@ -116,6 +114,7 @@ def auction(request, nr):
                 )
                 bid.save()
                 act_max_bid = bid_value
+                max_bid = bid
                 messages.success(request, "Bid placed.")
             else:
                 messages.warning(request, "Your bid must be higher than actual price.")
@@ -131,7 +130,6 @@ def auction(request, nr):
                 text = comment,
                 user = request.user)
             newComment.save()
-            message = "Comment added."
             messages.success(request, "Comment added.")
 
 
@@ -139,9 +137,10 @@ def auction(request, nr):
 
     return render(request, "auctions/auction.html", {
         "auc": Listing.objects.get(pk=nr),
-        "message": message,
         "comments": Comment.objects.filter(auction = auc),
         "price": act_max_bid,
+        "max_bid": max_bid,
+
     })
 
 @login_required(login_url = "/login")
@@ -180,6 +179,20 @@ def create(request):
             "categories": Category.objects.all(),
             "message": "Strona podstawowa"
         })
+
+@login_required(login_url = "/login")
+def watchlist_add(request, pk):
+    item_to_save = get_object_or_404(Listing, pk=pk)
+    request.user.watching.add(item_to_save)
+    request.user.save()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+@login_required(login_url = "/login")
+def watchlist_remove(request, pk):
+    item_to_save = get_object_or_404(Listing, pk=pk)
+    request.user.watching.remove(item_to_save)
+    request.user.save()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
 def get_auction_max_price(auc):
