@@ -105,7 +105,12 @@ def auction(request, nr):
             bid_value = float(request.POST["bid_value"])
             
 
-            if bid_value > act_max_bid:
+            if bid_value <= act_max_bid:
+                messages.warning(request, "Your bid must be higher than actual price.")
+            elif auc.ended:
+                messages.error(request, "Auction is finished.")
+
+            else:
                 bid = Bid(
                     user = request.user,
                     bid_date = datetime.today(),
@@ -116,8 +121,6 @@ def auction(request, nr):
                 act_max_bid = bid_value
                 max_bid = bid
                 messages.success(request, "Bid placed.")
-            else:
-                messages.warning(request, "Your bid must be higher than actual price.")
 
                 
 
@@ -194,6 +197,22 @@ def watchlist_remove(request, pk):
     request.user.save()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
+@login_required(login_url = "/login")
+def end_auction(request, pk):
+    auc = get_object_or_404(Listing, pk=pk)
+    if auc.user == request.user and not auc.ended:
+        auc.ended = True
+        max_bid = Bid.objects.filter(auction = auc).order_by('-bid_value').first()
+        if max_bid == None:
+            pass
+        else:
+            auc.winner = max_bid.user
+
+        auc.save()
+        messages.success(request,"Auction ended")
+    else:
+        messages.error(request,"You can't do that")
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 def get_auction_max_price(auc):
     act_max_bid = Bid.objects.filter(auction = auc).order_by('-bid_value').first()

@@ -28,31 +28,39 @@
       {% else %}
       <a href="{% url 'watchlist_add' auc.pk %}" class="btn btn-primary" style="position: relative; z-index: 2;">Add to watch</a>
       {% endif %} 
+      {% if auc.ended %}
+        
+      {% elif auc.user == user %}
+        <a href="{% url 'end_auction' auc.pk %}" class="btn btn-danger" style="position: relative; z-index: 2;">End Auction</a>
+      {% endif %}       
     {% endif %}
     <p>Current Price: {{ price|floatformat:2  }} zł</p>
+  </div>
 
     
 
-  </div>
-  {% if user.is_authenticated %}
   <div class="col-sm-3"> 
+    {% if auc.ended %}
+    Auction ended, the winner is {{ auc.winner }}
+    {% endif %}
+    {% if user.is_authenticated and not auc.ended %}
     <form action="{% url 'auction' auc.pk %}" method="post">
       {% csrf_token %}
       <div class="input-group mb-3">
         <input type="number" min="" step="0.01" name="bid_value" class="form-control" placeholder="Enter price" aria-label="Entering price label" aria-describedby="Button description">
         <button class="btn btn-outline-secondary" type="submit" name="bid-bt">Place bid</button>
-        {% if max_bid.user == user %}
-          You have the biggest one.
-        {% endif %}
       </div>
-    </form>
+        {% if max_bid.user == user %}
+          <p>You have the biggest one.</p>
+        {% endif %}
+      </form>
+      {% endif %}
   </div>
-  {% endif %}
 </div>
 
 
 
-
+{% if user.is_authenticated %}
 <h4>Leave a Comment:</h4>
 <form role="form" action="{% url 'auction' auc.pk %}" method="POST">
   {% csrf_token %}
@@ -61,6 +69,7 @@
   </div>
   <button type="submit" name="comment-bt" class="btn btn-success">Submit</button>
 </form>
+{% endif %}
 <br><br>
 Comments: <span class="badge bg-secondary">{{ auc.comments.count }}</span>
 

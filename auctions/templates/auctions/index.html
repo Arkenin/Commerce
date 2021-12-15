@@ -14,14 +14,18 @@
           </div>
           <div class="row">
           <div class="col-sm-10">
-            <a href="{% url 'auction' auc.pk %}" class="btn btn-primary stretched-link">Go bid</a>
+            <a href="{% url 'auction' auc.pk %}" class="btn btn-primary stretched-link">Details</a>
             {% if user.is_authenticated %}
-              {% if auc in user.watching.all %}
-              <a href="{% url 'watchlist_remove' auc.pk %}" class="btn btn-warning" style="position: relative; z-index: 2;">Remove from watchlist</a>
-              {% else %}
-              <a href="{% url 'watchlist_add' auc.pk %}" class="btn btn-primary" style="position: relative; z-index: 2;">Add to watch</a>
-              {% endif %} 
+            {% if auc in user.watching.all %}
+            <a href="{% url 'watchlist_remove' auc.pk %}" class="btn btn-warning" style="position: relative; z-index: 2;">Remove from watchlist</a>
+            {% else %}
+            <a href="{% url 'watchlist_add' auc.pk %}" class="btn btn-primary" style="position: relative; z-index: 2;">Add to watch</a>
+            {% endif %} 
             {% endif %}
+            {% if auc.ended %}
+              Finished
+            {% endif %}
+            
           </div>
           <div class="col-sm-2">
             <span class="text-muted">{{ auc.pub_date }}</span>
