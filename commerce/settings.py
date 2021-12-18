@@ -20,12 +20,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '6ps8j!crjgrxt34cqbqn7x&b3y%(fny8k8nh21+qa)%ws3fh!q'
+try:
+    SECRET_KEY = os.environ["SECRET_KEY"]
+except KeyError as e:
+    # raise RuntimeError("Could not find a SECRET_KEY in environment") from e
+    print("Could not find a SECRET_KEY in environment")
+    SECRET_KEY = '6ps8j!crjgrxt34cqbqn7x&b3y%(fny8k8nh21+qa)%ws3fh!q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ["localhost", "192.168.1.2"]
+ALLOWED_HOSTS = ["localhost", "192.168.1.2", 'artforge.pl', 'www.artforge.pl']
 
 
 # Application definition
