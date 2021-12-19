@@ -127,7 +127,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 # Note: Replace 'supersecure.codes' with your domain
 STATIC_ROOT = "/var/www/artforge.pl/static"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [BASE_DIR + "/static"]
 
 from django.contrib.messages import constants as messages
 
